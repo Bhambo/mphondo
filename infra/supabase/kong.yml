@@ -8,11 +8,11 @@ _format_version: "1.1"
 consumers:
   - username: anon
     keyauth_credentials:
-      - key: ${SUPABASE_ANON_KEY}
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc5MTE5OTEzLCJleHAiOjIwOTQ0Nzk5MTN9.QOrVVKJS3Fdr156FfUtvvEOzm9BX_MBOaAhxghPPeTg
 
   - username: service_role
     keyauth_credentials:
-      - key: ${SUPABASE_SERVICE_KEY}
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NzkxMTk5MTMsImV4cCI6MjA5NDQ3OTkxM30.gtRja6yKsFZZRvepfFo_H6bIZZ4ceQ6cAxOUZSv0_dc
 
 acls:
   - consumer: anon
@@ -50,6 +50,16 @@ services:
         strip_path: true
         paths:
           - /auth/v1/authorize
+    plugins:
+      - name: cors
+
+  - name: auth-v1-open-health
+    url: http://supabase-auth:9999/health
+    routes:
+      - name: auth-v1-open-health
+        strip_path: true
+        paths:
+          - /auth/v1/health
     plugins:
       - name: cors
 
