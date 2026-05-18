@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class BankConnectionCreate(BaseModel):
     bank_name: str = Field(..., min_length=1, max_length=100)
-    account_id: uuid.UUID     # the accounts table entry
+    account_id: uuid.UUID  # the accounts table entry
 
 
 class BankConnectionOut(BaseModel):

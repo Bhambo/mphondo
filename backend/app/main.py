@@ -53,13 +53,13 @@ Instrumentator(excluded_handlers=["/api/health"]).instrument(app).expose(
 # ── Routers ────────────────────────────────────────────────────────────────
 API = "/api/v1"
 
-app.include_router(accounts_router,   prefix=f"{API}/accounts",   tags=["accounts"])
-app.include_router(ledger_router,     prefix=f"{API}/ledger",     tags=["ledger"])
-app.include_router(mpesa_router,      prefix=f"{API}/mpesa",      tags=["mpesa"])
+app.include_router(accounts_router, prefix=f"{API}/accounts", tags=["accounts"])
+app.include_router(ledger_router, prefix=f"{API}/ledger", tags=["ledger"])
+app.include_router(mpesa_router, prefix=f"{API}/mpesa", tags=["mpesa"])
 app.include_router(banking_es_router, prefix=f"{API}/banking-es", tags=["banking-es"])
-app.include_router(xitiqui_router,    prefix=f"{API}/xitiqui",    tags=["xitiqui"])
-app.include_router(analytics_router,  prefix=f"{API}/analytics",  tags=["analytics"])
-app.include_router(budgets_router,    prefix=f"{API}/budgets",    tags=["budgets"])
+app.include_router(xitiqui_router, prefix=f"{API}/xitiqui", tags=["xitiqui"])
+app.include_router(analytics_router, prefix=f"{API}/analytics", tags=["analytics"])
+app.include_router(budgets_router, prefix=f"{API}/budgets", tags=["budgets"])
 
 
 @app.get("/api/health", include_in_schema=False)

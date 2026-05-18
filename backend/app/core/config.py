@@ -18,9 +18,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "info"
 
     # ── Security ───────────────────────────────────────────────────────────
-    SECRET_KEY: str                    # 64 random hex chars
-    ENCRYPTION_KEY: str                # 32-char key for pgcrypto column-level encryption
-    SUPABASE_JWT_SECRET: str           # shared with GoTrue — validates Bearer tokens
+    SECRET_KEY: str  # 64 random hex chars
+    ENCRYPTION_KEY: str  # 32-char key for pgcrypto column-level encryption
+    SUPABASE_JWT_SECRET: str  # shared with GoTrue — validates Bearer tokens
 
     # ── Database ───────────────────────────────────────────────────────────
     POSTGRES_DB: str = "mphondo"
@@ -60,7 +60,7 @@ class Settings(BaseSettings):
         return v
 
     # ── External APIs ──────────────────────────────────────────────────────
-    FX_API_KEY: str = ""               # exchangerate.host — empty = use free endpoint
+    FX_API_KEY: str = ""  # exchangerate.host — empty = use free endpoint
     ENABLE_BANKING_CLIENT_ID: str = ""
     ENABLE_BANKING_CLIENT_SECRET: str = ""
 
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     NTFY_TOPIC: str = ""
 
     # ── Feature flags ──────────────────────────────────────────────────────
-    MPESA_PDF_OCR_FALLBACK: bool = True   # try pytesseract when pdfplumber fails
+    MPESA_PDF_OCR_FALLBACK: bool = True  # try pytesseract when pdfplumber fails
 
 
 @lru_cache

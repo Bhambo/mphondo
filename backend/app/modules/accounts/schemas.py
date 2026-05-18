@@ -5,8 +5,13 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 AccountType = Literal[
-    "mpesa", "bank_es", "cash_mz", "cash_es",
-    "xitiqui", "virtual_income", "virtual_expense",
+    "mpesa",
+    "bank_es",
+    "cash_mz",
+    "cash_es",
+    "xitiqui",
+    "virtual_income",
+    "virtual_expense",
 ]
 CurrencyCode = Literal["EUR", "MZN"]
 ModuleContext = Literal["mz", "es"]

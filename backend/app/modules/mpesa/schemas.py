@@ -6,10 +6,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 MpesaOpType = Literal[
     # Entradas MZ
-    "ingresso", "deposito", "devolution", "recebido",
+    "ingresso",
+    "deposito",
+    "devolution",
+    "recebido",
     # Saídas MZ
-    "envio_es", "xitiqui_out", "emprestimo_dado", "compra_pessoal",
-    "gasto_familia", "taxa_mpesa", "saida_diversa",
+    "envio_es",
+    "xitiqui_out",
+    "emprestimo_dado",
+    "compra_pessoal",
+    "gasto_familia",
+    "taxa_mpesa",
+    "saida_diversa",
     # Transferências internas
     "transferencia_interna",
 ]
@@ -17,6 +25,7 @@ MpesaOpType = Literal[
 
 class MpesaTransactionCreate(BaseModel):
     """Manual entry for an M-Pesa operation."""
+
     account_id: uuid.UUID
     op_type: MpesaOpType
     amount: Decimal = Field(..., gt=0, decimal_places=4)
@@ -24,7 +33,7 @@ class MpesaTransactionCreate(BaseModel):
     contact_name: str | None = Field(None, max_length=120)
     reference: str | None = Field(None, max_length=100)
     notes: str | None = None
-    fx_rate_snapshot: Decimal | None = None   # EUR/MZN at time of operation
+    fx_rate_snapshot: Decimal | None = None  # EUR/MZN at time of operation
 
 
 class MpesaRawTxOut(BaseModel):

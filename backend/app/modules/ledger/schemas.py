@@ -19,7 +19,7 @@ class EntryIn(BaseModel):
 
 class TransactionCreate(BaseModel):
     description: str = Field(..., min_length=1, max_length=500)
-    occurred_at: str                          # ISO8601 datetime string
+    occurred_at: str  # ISO8601 datetime string
     module: ModuleContext
     currency: CurrencyCode
     category_id: uuid.UUID | None = None
@@ -32,10 +32,7 @@ class TransactionCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_double_entry(self) -> "TransactionCreate":
-        total = sum(
-            e.amount if e.direction == "credit" else -e.amount
-            for e in self.entries
-        )
+        total = sum(e.amount if e.direction == "credit" else -e.amount for e in self.entries)
         if total != 0:
             raise ValueError(
                 f"Entries must balance to zero (got {total}). "

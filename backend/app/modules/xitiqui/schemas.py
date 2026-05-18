@@ -9,7 +9,7 @@ XitiqueRole = Literal["organizer", "member"]
 
 class XitiqueGroupCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
-    account_id: uuid.UUID      # xitiqui virtual account
+    account_id: uuid.UUID  # xitiqui virtual account
     contribution_amount: Decimal = Field(..., gt=0, decimal_places=4)
     currency: Literal["MZN", "EUR"] = "MZN"
     frequency_days: int = Field(30, ge=7, le=365)

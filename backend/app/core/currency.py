@@ -13,7 +13,9 @@ log = structlog.get_logger()
 
 _CACHE_TTL = 60 * 60 * 4  # 4 hours
 _FREE_ENDPOINT = "https://open.er-api.com/v6/latest/{base}"
-_PAID_ENDPOINT = "https://api.exchangerate.host/live?access_key={key}&source={base}&currencies={targets}"
+_PAID_ENDPOINT = (
+    "https://api.exchangerate.host/live?access_key={key}&source={base}&currencies={targets}"
+)
 
 
 async def get_fx_rate(
@@ -37,9 +39,7 @@ async def get_fx_rate(
 async def _fetch_rate(base: str, target: str) -> decimal.Decimal:
     async with httpx.AsyncClient(timeout=10) as client:
         if settings.FX_API_KEY:
-            url = _PAID_ENDPOINT.format(
-                key=settings.FX_API_KEY, base=base, targets=target
-            )
+            url = _PAID_ENDPOINT.format(key=settings.FX_API_KEY, base=base, targets=target)
             r = await client.get(url)
             r.raise_for_status()
             data = r.json()

@@ -24,5 +24,5 @@ class BudgetOut(BaseModel):
     period_year: int
     period_month: int
     alert_threshold: Decimal
-    spent: Decimal | None = None      # computed field — filled by service
+    spent: Decimal | None = None  # computed field — filled by service
     remaining: Decimal | None = None

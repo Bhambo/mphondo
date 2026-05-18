@@ -92,29 +92,33 @@ def parse_sms(text: str) -> list[ParsedOperation]:
 
     for match in _SMS_SEND.finditer(text):
         g = match.groupdict()
-        results.append(ParsedOperation(
-            occurred_at=None,
-            op_type="envio_es",
-            amount=_to_decimal(g["amount"]),
-            counterpart=g["counterpart"].strip(),
-            balance_after=_to_decimal(g["balance"]),
-            reference=g.get("ref"),
-            raw_line=match.group(0),
-            confidence=Decimal("0.90"),
-        ))
+        results.append(
+            ParsedOperation(
+                occurred_at=None,
+                op_type="envio_es",
+                amount=_to_decimal(g["amount"]),
+                counterpart=g["counterpart"].strip(),
+                balance_after=_to_decimal(g["balance"]),
+                reference=g.get("ref"),
+                raw_line=match.group(0),
+                confidence=Decimal("0.90"),
+            )
+        )
 
     for match in _SMS_RECEIVE.finditer(text):
         g = match.groupdict()
-        results.append(ParsedOperation(
-            occurred_at=None,
-            op_type="recebido",
-            amount=_to_decimal(g["amount"]),
-            counterpart=g["counterpart"].strip(),
-            balance_after=_to_decimal(g["balance"]),
-            reference=g.get("ref"),
-            raw_line=match.group(0),
-            confidence=Decimal("0.90"),
-        ))
+        results.append(
+            ParsedOperation(
+                occurred_at=None,
+                op_type="recebido",
+                amount=_to_decimal(g["amount"]),
+                counterpart=g["counterpart"].strip(),
+                balance_after=_to_decimal(g["balance"]),
+                reference=g.get("ref"),
+                raw_line=match.group(0),
+                confidence=Decimal("0.90"),
+            )
+        )
 
     return results
 
@@ -146,16 +150,18 @@ def parse_pdf(file_bytes: bytes) -> list[ParsedOperation]:
             occurred_at = None
 
         amount = _to_decimal(g["amount"])
-        results.append(ParsedOperation(
-            occurred_at=occurred_at,
-            op_type=_infer_op_type(g["description"], g["amount"]),
-            amount=abs(amount) if amount else None,
-            counterpart=None,
-            balance_after=_to_decimal(g["balance"]),
-            reference=g.get("ref"),
-            raw_line=line,
-            confidence=Decimal("0.75"),
-        ))
+        results.append(
+            ParsedOperation(
+                occurred_at=occurred_at,
+                op_type=_infer_op_type(g["description"], g["amount"]),
+                amount=abs(amount) if amount else None,
+                counterpart=None,
+                balance_after=_to_decimal(g["balance"]),
+                reference=g.get("ref"),
+                raw_line=line,
+                confidence=Decimal("0.75"),
+            )
+        )
 
     log.info("mpesa_pdf_parsed", total=len(results))
     return results

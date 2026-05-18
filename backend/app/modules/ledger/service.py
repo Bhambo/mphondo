@@ -16,9 +16,7 @@ from app.modules.ledger.schemas import TransactionCreate
 log = structlog.get_logger()
 
 
-async def create_transaction(
-    db: AsyncSession, user_id: uuid.UUID, data: TransactionCreate
-) -> dict:
+async def create_transaction(db: AsyncSession, user_id: uuid.UUID, data: TransactionCreate) -> dict:
     async with db.begin():
         result = await db.execute(
             text("""
@@ -68,9 +66,7 @@ async def create_transaction(
     return await get_transaction(db, user_id, tx_id)
 
 
-async def get_transaction(
-    db: AsyncSession, user_id: uuid.UUID, tx_id: uuid.UUID
-) -> dict | None:
+async def get_transaction(db: AsyncSession, user_id: uuid.UUID, tx_id: uuid.UUID) -> dict | None:
     result = await db.execute(
         text("SELECT * FROM transactions WHERE id = :id AND user_id = :uid AND deleted_at IS NULL"),
         {"id": str(tx_id), "uid": str(user_id)},
@@ -134,9 +130,7 @@ async def list_transactions(
     return result.mappings().all()
 
 
-async def soft_delete_transaction(
-    db: AsyncSession, user_id: uuid.UUID, tx_id: uuid.UUID
-) -> bool:
+async def soft_delete_transaction(db: AsyncSession, user_id: uuid.UUID, tx_id: uuid.UUID) -> bool:
     result = await db.execute(
         text("""
             UPDATE transactions
