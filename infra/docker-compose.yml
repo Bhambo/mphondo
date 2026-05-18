@@ -68,8 +68,8 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mphondo}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mphondo}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY required}
       SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL required}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:?SUPABASE_SERVICE_KEY required}
@@ -107,8 +107,8 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mphondo}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mphondo}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       SECRET_KEY: ${SECRET_KEY}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
@@ -340,6 +340,7 @@ services:
     environment:
       WATCHTOWER_POLL_INTERVAL: 300          # comprobar cada 5 min
       WATCHTOWER_CLEANUP: "true"
+      DOCKER_API_VERSION: "1.41"
       WATCHTOWER_INCLUDE_STOPPED: "false"
       WATCHTOWER_LABEL_ENABLE: "true"        # sólo actualiza contenedores con label
       REPO_USER: ${GITHUB_ACTOR:-}
