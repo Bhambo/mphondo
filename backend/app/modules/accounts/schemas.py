@@ -1,9 +1,8 @@
+import uuid
 from decimal import Decimal
 from typing import Literal
-import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 AccountType = Literal[
     "mpesa", "bank_es", "cash_mz", "cash_es",

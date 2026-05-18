@@ -1,7 +1,7 @@
 """pytest fixtures — async DB session, test client, fake JWT."""
 
-from collections.abc import AsyncGenerator
 import uuid
+from collections.abc import AsyncGenerator
 
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient

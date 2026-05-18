@@ -1,9 +1,8 @@
+import uuid
 from decimal import Decimal
 from typing import Literal
-import uuid
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 
 TransactionStatus = Literal["pending", "confirmed", "cancelled", "reconciled"]
 EntryDirection = Literal["debit", "credit"]
