@@ -10,7 +10,7 @@ from app.workers.tasks import WorkerSettings
 
 
 def main() -> None:
-    run_worker(WorkerSettings)
+    run_worker(WorkerSettings)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

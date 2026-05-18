@@ -128,7 +128,7 @@ async def list_pending_review(
         """),
         {"sid": str(statement_id), "uid": str(user_id)},
     )
-    return result.mappings().all()
+    return list(result.mappings().all())
 
 
 async def confirm_raw_transaction(
@@ -148,4 +148,4 @@ async def confirm_raw_transaction(
         {"rid": str(raw_tx_id), "tx_id": str(mapped_tx_id), "uid": str(user_id)},
     )
     await db.commit()
-    return result.rowcount > 0
+    return result.rowcount > 0  # type: ignore[attr-defined]

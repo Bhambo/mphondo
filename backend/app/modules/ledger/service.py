@@ -63,7 +63,9 @@ async def create_transaction(db: AsyncSession, user_id: uuid.UUID, data: Transac
             )
 
     log.info("transaction_created", tx_id=str(tx_id), user_id=str(user_id))
-    return await get_transaction(db, user_id, tx_id)
+    result = await get_transaction(db, user_id, tx_id)
+    assert result is not None
+    return result
 
 
 async def get_transaction(db: AsyncSession, user_id: uuid.UUID, tx_id: uuid.UUID) -> dict | None:
@@ -127,7 +129,7 @@ async def list_transactions(
         text(query),
         params,
     )
-    return result.mappings().all()
+    return list(result.mappings().all())
 
 
 async def soft_delete_transaction(db: AsyncSession, user_id: uuid.UUID, tx_id: uuid.UUID) -> bool:
@@ -141,4 +143,4 @@ async def soft_delete_transaction(db: AsyncSession, user_id: uuid.UUID, tx_id: u
         {"id": str(tx_id), "uid": str(user_id)},
     )
     await db.commit()
-    return result.rowcount > 0
+    return result.rowcount > 0  # type: ignore[attr-defined]

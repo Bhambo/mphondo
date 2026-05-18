@@ -13,10 +13,10 @@ _MAX_PDF_SIZE = 10 * 1024 * 1024  # 10 MB
 
 @router.post("/statements/upload", response_model=StatementUploadOut)
 async def upload_statement(
+    db: DB,
+    current_user: CurrentUser,
     account_id: uuid.UUID = Form(...),
     file: UploadFile = File(...),
-    db: DB = ...,
-    current_user: CurrentUser = ...,
 ):
     if file.content_type not in ("application/pdf", "application/octet-stream"):
         raise HTTPException(status_code=400, detail="Only PDF files accepted")
@@ -38,9 +38,9 @@ async def list_pending_review(statement_id: uuid.UUID, db: DB, current_user: Cur
 @router.post("/raw/{raw_tx_id}/confirm", status_code=status.HTTP_204_NO_CONTENT)
 async def confirm_raw_transaction(
     raw_tx_id: uuid.UUID,
+    db: DB,
+    current_user: CurrentUser,
     mapped_transaction_id: uuid.UUID = Form(...),
-    db: DB = ...,
-    current_user: CurrentUser = ...,
 ):
     ok = await service.confirm_raw_transaction(db, current_user, raw_tx_id, mapped_transaction_id)
     if not ok:

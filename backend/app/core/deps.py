@@ -1,6 +1,7 @@
 """FastAPI dependency injection — database session and current user."""
 
 import uuid
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -14,7 +15,7 @@ from app.core.security import extract_user_id
 bearer = HTTPBearer(auto_error=True)
 
 
-async def get_db() -> AsyncSession:  # type: ignore[return]
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
 

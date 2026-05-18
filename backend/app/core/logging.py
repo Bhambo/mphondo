@@ -1,5 +1,6 @@
 import logging
 import sys
+from typing import Any
 
 import structlog
 
@@ -9,7 +10,7 @@ from app.core.config import settings
 def configure_logging() -> None:
     log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
 
-    shared_processors = [
+    shared_processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
@@ -17,6 +18,7 @@ def configure_logging() -> None:
         structlog.processors.StackInfoRenderer(),
     ]
 
+    renderer: Any
     if settings.ENVIRONMENT == "development":
         renderer = structlog.dev.ConsoleRenderer()
     else:

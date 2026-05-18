@@ -14,7 +14,7 @@ async def list_accounts(db: AsyncSession, user_id: uuid.UUID) -> list:
         text("SELECT * FROM v_account_balances WHERE user_id = :uid ORDER BY created_at"),
         {"uid": str(user_id)},
     )
-    return result.mappings().all()
+    return list(result.mappings().all())
 
 
 async def create_account(db: AsyncSession, user_id: uuid.UUID, data: AccountCreate) -> dict:
