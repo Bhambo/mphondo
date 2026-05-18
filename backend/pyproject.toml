@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mphondo-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    # Web framework
+    "fastapi==0.115.5",
+    "uvicorn[standard]==0.32.0",
+    "python-multipart==0.0.12",
+
+    # Database
+    "sqlalchemy[asyncio]==2.0.36",
+    "asyncpg==0.30.0",
+    "alembic==1.14.0",
+
+    # Auth / Security
+    "python-jose[cryptography]==3.3.0",
+    "passlib[argon2]==1.7.4",
+    "argon2-cffi==23.1.0",
+
+    # Validation
+    "pydantic==2.10.3",
+    "pydantic-settings==2.6.1",
+
+    # HTTP client (Enable Banking, FX rates, ntfy)
+    "httpx==0.28.0",
+
+    # Redis / job queue
+    "redis[hiredis]==5.2.0",
+    "arq==0.26.1",
+
+    # M-Pesa PDF parser
+    "pdfplumber==0.11.4",
+    "pytesseract==0.3.13",
+    "Pillow==11.0.0",
+
+    # Crypto (ENCRYPTION_KEY pgcrypto helper)
+    "cryptography==43.0.3",
+
+    # Observability
+    "structlog==24.4.0",
+    "prometheus-fastapi-instrumentator==7.0.0",
+
+    # Utilities
+    "python-dateutil==2.9.0",
+    "babel==2.16.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov==6.0.0",
+    "httpx==0.28.0",      # async test client
+    "factory-boy==3.3.1",
+    "ruff==0.8.4",
+    "mypy==1.13.0",
+    "types-python-dateutil==2.9.0.20241206",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "S", "B", "C4", "PTH"]
+ignore = ["S101"]   # assert allowed in tests
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_return_any = false
+warn_unused_ignores = false
+# TODO: enable strict incrementally as stubs are replaced with real implementations
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "--cov=app --cov-report=term-missing --cov-fail-under=30"
+
+[tool.coverage.run]
+omit = ["tests/*", "alembic/*"]

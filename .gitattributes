@@ -1,0 +1,20 @@
+# Normalize line endings
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.toml text eol=lf
+*.sql text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+
+# Binary files — no LF normalization
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.ico binary

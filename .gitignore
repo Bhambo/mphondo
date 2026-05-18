@@ -1,0 +1,43 @@
+# Secrets — NUNCA al repositorio
+infra/.env
+infra/*.pem
+infra/*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+android/
+ios/
+
+# Docker
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store

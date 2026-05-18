@@ -1,0 +1,103 @@
+# =============================================================
+# Mphondo v3 — Caddyfile
+# =============================================================
+# Tailscale provee TLS automático vía MagicDNS.
+# El hostname es el del nodo Tailscale (ej: mphondo.tail1234.ts.net)
+# Para usar dominio propio: sustituir {$CADDY_HOST} por tu dominio
+#   y añadir el certificado en Tailscale ACLs o en Caddy directamente.
+#
+# Configuración de entorno:
+#   CADDY_HOST=mphondo.tail1234.ts.net   (nombre Tailscale MagicDNS)
+#   API_UPSTREAM=mphondo-api:8000
+#   SUPABASE_UPSTREAM=mphondo-supabase-kong:8000
+#   GRAFANA_UPSTREAM=mphondo-grafana:3000
+# =============================================================
+
+{
+  # Logs estructurados
+  log {
+    output file /var/log/caddy/access.log {
+      roll_size     100mb
+      roll_keep     5
+      roll_keep_for 720h
+    }
+    format json
+  }
+
+  # Email para ACME (si se usa dominio público en lugar de Tailscale)
+  # email {$ACME_EMAIL}
+}
+
+# -----------------------------------------------------------
+# API FastAPI  →  /api/*
+# -----------------------------------------------------------
+{$CADDY_HOST} {
+
+  # Security headers globales
+  header {
+    Strict-Transport-Security  "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options     "nosniff"
+    X-Frame-Options            "DENY"
+    Referrer-Policy            "strict-origin-when-cross-origin"
+    Permissions-Policy         "camera=(), microphone=(), geolocation=()"
+    -Server
+  }
+
+  # Rate limiting general (requiere Caddy con caddy-ratelimit plugin)
+  # rate_limit {
+  #   zone dynamic {
+  #     key {remote_host}
+  #     events 100
+  #     window 1m
+  #   }
+  # }
+
+  # ---  FastAPI API  ---
+  handle /api/* {
+    uri strip_prefix /api
+    reverse_proxy {$API_UPSTREAM:?API_UPSTREAM not set} {
+      header_up X-Real-IP {remote_host}
+      header_up X-Forwarded-For {remote_host}
+      header_up X-Forwarded-Proto {scheme}
+      # Timeout generoso para parseo de PDFs grandes
+      transport http {
+        read_timeout  120s
+        write_timeout 120s
+      }
+    }
+  }
+
+  # ---  Supabase (Auth, Storage, Realtime, PostgREST)  ---
+  handle /supabase/* {
+    uri strip_prefix /supabase
+    reverse_proxy {$SUPABASE_UPSTREAM:?SUPABASE_UPSTREAM not set} {
+      header_up X-Real-IP {remote_host}
+      header_up X-Forwarded-For {remote_host}
+      header_up X-Forwarded-Proto {scheme}
+    }
+  }
+
+  # ---  Supabase Realtime WebSocket  ---
+  handle /realtime/* {
+    reverse_proxy {$SUPABASE_UPSTREAM} {
+      header_up Connection "Upgrade"
+      header_up Upgrade    "websocket"
+    }
+  }
+
+  # ---  Grafana (sólo accesible vía Tailscale)  ---
+  handle /grafana/* {
+    uri strip_prefix /grafana
+    reverse_proxy {$GRAFANA_UPSTREAM:?GRAFANA_UPSTREAM not set}
+  }
+
+  # ---  Health check público  ---
+  handle /health {
+    respond "OK" 200
+  }
+
+  # Fallback — 404
+  handle {
+    respond "Not Found" 404
+  }
+}

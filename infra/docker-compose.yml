@@ -1,0 +1,370 @@
+# =============================================================
+# Mphondo v3 — Docker Compose (Raspberry Pi 4 · arm64)
+# =============================================================
+# Requisitos: Docker Engine 24+ y Docker Compose v2
+# Uso:
+#   cp .env.example .env        # editar variables
+#   docker compose up -d        # arrancar todos los servicios
+#   docker compose logs -f api  # ver logs de FastAPI
+# =============================================================
+
+name: mphondo
+
+services:
+
+  # -----------------------------------------------------------
+  # PostgreSQL 17
+  # -----------------------------------------------------------
+  db:
+    image: postgres:17-alpine
+    platform: linux/arm64
+    container_name: mphondo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mphondo}
+      POSTGRES_USER: ${POSTGRES_USER:-mphondo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro  # schema inicial
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mphondo} -d ${POSTGRES_DB:-mphondo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # Redis 7 (cache + job queue para Arq)
+  # -----------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    platform: linux/arm64
+    container_name: mphondo-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required} --save 60 1
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # FastAPI — Backend principal
+  # -----------------------------------------------------------
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY:-bhambo/mphondo}/mphondo-api:${API_TAG:-stable}
+    platform: linux/arm64
+    container_name: mphondo-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mphondo}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mphondo}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY required}
+      SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL required}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:?SUPABASE_SERVICE_KEY required}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:?SUPABASE_JWT_SECRET required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY required}
+      FX_API_KEY: ${FX_API_KEY:-}
+      ENABLE_BANKING_CLIENT_ID: ${ENABLE_BANKING_CLIENT_ID:-}
+      ENABLE_BANKING_CLIENT_SECRET: ${ENABLE_BANKING_CLIENT_SECRET:-}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - api_uploads:/app/uploads   # PDFs M-Pesa temporales (antes de subir a Supabase Storage)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - internal
+      - proxy
+
+  # -----------------------------------------------------------
+  # Arq Worker — jobs asíncronos (PDF parser, FX, notificaciones)
+  # -----------------------------------------------------------
+  worker:
+    image: ghcr.io/${GITHUB_REPOSITORY:-bhambo/mphondo}/mphondo-api:${API_TAG:-stable}
+    platform: linux/arm64
+    container_name: mphondo-worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.workers.main"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mphondo}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mphondo}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      SECRET_KEY: ${SECRET_KEY}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      FX_API_KEY: ${FX_API_KEY:-}
+      NTFY_URL: ${NTFY_URL:-}          # ntfy.sh para push notifications
+      NTFY_TOPIC: ${NTFY_TOPIC:-mphondo}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+    volumes:
+      - api_uploads:/app/uploads
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # Supabase — Kong (API Gateway)
+  # -----------------------------------------------------------
+  supabase-kong:
+    image: kong:2.8.1
+    platform: linux/arm64
+    container_name: mphondo-supabase-kong
+    restart: unless-stopped
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+    volumes:
+      - ./supabase/kong.yml:/var/lib/kong/kong.yml:ro
+    networks:
+      - internal
+      - proxy
+    ports:
+      - "127.0.0.1:8443:8000"   # sólo localhost, Caddy expone hacia fuera
+
+  # -----------------------------------------------------------
+  # Supabase — Auth (GoTrue)
+  # -----------------------------------------------------------
+  supabase-auth:
+    image: supabase/gotrue:v2.151.0
+    platform: linux/arm64
+    container_name: mphondo-supabase-auth
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: "0.0.0.0"
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${SUPABASE_URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgresql://${POSTGRES_USER:-mphondo}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mphondo}?search_path=auth
+      GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:3000}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS:-}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 604800        # 7 días
+      GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Mphondo}
+      GOTRUE_MAILER_AUTOCONFIRM: ${MAILER_AUTOCONFIRM:-false}
+      GOTRUE_MFA_TOTP_ENABLED: "true"
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # Supabase — PostgREST (auto-CRUD)
+  # -----------------------------------------------------------
+  supabase-rest:
+    image: postgrest/postgrest:v12.2.0
+    platform: linux/arm64
+    container_name: mphondo-supabase-rest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgresql://${POSTGRES_USER:-mphondo}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mphondo}
+      PGRST_DB_SCHEMAS: public,storage
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # Supabase — Realtime
+  # -----------------------------------------------------------
+  supabase-realtime:
+    image: supabase/realtime:v2.30.21
+    platform: linux/arm64
+    container_name: mphondo-supabase-realtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-mphondo}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB:-mphondo}
+      DB_SSL: "false"
+      DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
+      DB_ENC_KEY: supabaserealtime
+      PORT: 4000
+      API_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      REPLICATION_MODE: RLS
+      REPLICATION_POLL_INTERVAL: 100
+      SECURE_CHANNELS: "true"
+      SLOT_NAME: supabase_realtime_rls
+      TEMPORARY_SLOT: "true"
+      RLIMIT_NOFILE: "4096"
+      SECRET_KEY_BASE: ${REALTIME_SECRET_KEY_BASE:?REALTIME_SECRET_KEY_BASE required}
+      APP_NAME: realtime
+      FLY_APP_NAME: realtime
+      FLY_ALLOC_ID: fly123
+      ERL_AFLAGS: "-proto_dist inet_tcp"
+      ENABLE_TAILSCALE: "false"
+      DNS_NODES: "''"
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # Supabase — Storage
+  # -----------------------------------------------------------
+  supabase-storage:
+    image: supabase/storage-api:v1.11.13
+    platform: linux/arm64
+    container_name: mphondo-supabase-storage
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ANON_KEY: ${SUPABASE_ANON_KEY:?SUPABASE_ANON_KEY required}
+      SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      POSTGREST_URL: http://supabase-rest:3000
+      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mphondo}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mphondo}
+      FILE_SIZE_LIMIT: 52428800     # 50MB — suficiente para PDFs M-Pesa
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: local
+      GLOBAL_S3_BUCKET: mphondo-storage
+      IS_MULTITENANT: "false"
+    volumes:
+      - supabase_storage:/var/lib/storage
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # Monitoring — Prometheus
+  # -----------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    platform: linux/arm64
+    container_name: mphondo-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # Monitoring — Grafana
+  # -----------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.4.2
+    platform: linux/arm64
+    container_name: mphondo-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD required}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_URL:-http://localhost:3001}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - internal
+      - proxy
+
+  # -----------------------------------------------------------
+  # Monitoring — node_exporter (métricas del RPi)
+  # -----------------------------------------------------------
+  node-exporter:
+    image: prom/node-exporter:v1.8.0
+    platform: linux/arm64
+    container_name: mphondo-node-exporter
+    restart: unless-stopped
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - internal
+
+  # -----------------------------------------------------------
+  # Watchtower — auto-actualización de imágenes (CD)
+  # -----------------------------------------------------------
+  watchtower:
+    image: containrrr/watchtower:latest
+    platform: linux/arm64
+    container_name: mphondo-watchtower
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_POLL_INTERVAL: 300          # comprobar cada 5 min
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_INCLUDE_STOPPED: "false"
+      WATCHTOWER_LABEL_ENABLE: "true"        # sólo actualiza contenedores con label
+      REPO_USER: ${GITHUB_ACTOR:-}
+      REPO_PASS: ${GHCR_TOKEN:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: mphondo-api mphondo-worker   # sólo actualiza api y worker
+
+# =============================================================
+# NETWORKS
+# =============================================================
+networks:
+  internal:
+    driver: bridge
+    internal: true      # sin salida a internet directa
+  proxy:
+    driver: bridge      # compartida con Caddy
+
+# =============================================================
+# VOLUMES
+# =============================================================
+volumes:
+  db_data:
+  redis_data:
+  api_uploads:
+  supabase_storage:
+  prometheus_data:
+  grafana_data:
