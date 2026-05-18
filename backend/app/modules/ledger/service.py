@@ -63,9 +63,9 @@ async def create_transaction(db: AsyncSession, user_id: uuid.UUID, data: Transac
             )
 
     log.info("transaction_created", tx_id=str(tx_id), user_id=str(user_id))
-    result = await get_transaction(db, user_id, tx_id)
-    assert result is not None
-    return result
+    tx_out = await get_transaction(db, user_id, tx_id)
+    assert tx_out is not None
+    return tx_out
 
 
 async def get_transaction(db: AsyncSession, user_id: uuid.UUID, tx_id: uuid.UUID) -> dict | None:
