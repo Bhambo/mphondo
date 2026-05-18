@@ -24,8 +24,9 @@ FROM base AS builder
 RUN pip install uv==0.5.14
 
 COPY pyproject.toml ./
-# Install production deps only (no [dev] extras)
-RUN uv pip install --system --no-dev -e .
+COPY app/ ./app/
+# Install production deps only (dev extras are opt-in via .[dev])
+RUN uv pip install --system .
 
 # ── Runtime stage ─────────────────────────────────────────────
 FROM base AS runtime
