@@ -1,5 +1,7 @@
 """M-Pesa SMS parser unit tests."""
 
+from decimal import Decimal
+
 from app.modules.mpesa.parser import parse_sms
 
 
@@ -12,7 +14,7 @@ def test_parse_sms_send():
     assert op.amount == 500
     assert op.counterpart == "Joao Silva"
     assert op.reference == "MPSA12345"
-    assert op.balance_after == 1234.56
+    assert op.balance_after == Decimal("1234.56")
 
 
 def test_parse_sms_receive():
