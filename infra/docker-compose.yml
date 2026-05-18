@@ -330,6 +330,29 @@ services:
       - internal
 
   # -----------------------------------------------------------
+  # Caddy — reverse proxy (HTTP sobre Tailscale)
+  # -----------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    platform: linux/arm64
+    container_name: mphondo-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CADDY_HOST: ${CADDY_HOST:-http://100.119.123.108}
+      API_UPSTREAM: ${API_UPSTREAM:-mphondo-api:8000}
+      SUPABASE_UPSTREAM: ${SUPABASE_UPSTREAM:-mphondo-supabase-kong:8000}
+      GRAFANA_UPSTREAM: ${GRAFANA_UPSTREAM:-mphondo-grafana:3000}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy
+
+  # -----------------------------------------------------------
   # Watchtower — auto-actualización de imágenes (CD)
   # -----------------------------------------------------------
   watchtower:
@@ -369,3 +392,5 @@ volumes:
   supabase_storage:
   prometheus_data:
   grafana_data:
+  caddy_data:
+  caddy_config:

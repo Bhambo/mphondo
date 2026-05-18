@@ -54,7 +54,6 @@
 
   # ---  FastAPI API  ---
   handle /api/* {
-    uri strip_prefix /api
     reverse_proxy {$API_UPSTREAM:?API_UPSTREAM not set} {
       header_up X-Real-IP {remote_host}
       header_up X-Forwarded-For {remote_host}
