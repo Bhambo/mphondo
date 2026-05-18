@@ -85,8 +85,8 @@
   }
 
   # ---  Grafana (sólo accesible vía Tailscale)  ---
-  handle /grafana/* {
-    uri strip_prefix /grafana
+  # GF_SERVER_SERVE_FROM_SUB_PATH=true → Grafana espera el prefijo /grafana intacto
+  handle /grafana* {
     reverse_proxy {$GRAFANA_UPSTREAM:?GRAFANA_UPSTREAM not set}
   }
 
