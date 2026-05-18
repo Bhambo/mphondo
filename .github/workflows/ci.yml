@@ -144,10 +144,14 @@ jobs:
       security-events: write
 
     steps:
+      - name: Lowercase image ref
+        id: image
+        run: echo "ref=$(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Run Trivy on image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable
+          image-ref: ${{ steps.image.outputs.ref }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
