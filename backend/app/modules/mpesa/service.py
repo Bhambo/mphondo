@@ -1,6 +1,6 @@
+from decimal import Decimal
 import hashlib
 import uuid
-from decimal import Decimal
 
 import structlog
 from sqlalchemy import text

@@ -1,7 +1,7 @@
 """FastAPI dependency injection — database session and current user."""
 
-import uuid
 from typing import Annotated
+import uuid
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer

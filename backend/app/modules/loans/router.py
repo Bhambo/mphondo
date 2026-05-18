@@ -1,7 +1,5 @@
 """Loans module — personal loans, family loans, payment schedule. Sprint 10."""
 
-import uuid
-
 from fastapi import APIRouter, status
 
 from app.core.deps import DB, CurrentUser

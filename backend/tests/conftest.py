@@ -1,9 +1,8 @@
 """pytest fixtures — async DB session, test client, fake JWT."""
 
+from collections.abc import AsyncGenerator
 import uuid
-from typing import AsyncGenerator
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine

@@ -1,6 +1,6 @@
-import uuid
 from decimal import Decimal
 from typing import Literal
+import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 

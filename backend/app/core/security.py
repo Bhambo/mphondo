@@ -4,8 +4,8 @@ FastAPI routes that require authentication use `CurrentUser` from deps.py.
 This module only handles token decoding — never token issuance (Supabase owns that).
 """
 
-import uuid
 from typing import Any
+import uuid
 
 from jose import JWTError, jwt
 

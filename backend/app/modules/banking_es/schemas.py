@@ -1,5 +1,5 @@
-import uuid
 from typing import Literal
+import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 

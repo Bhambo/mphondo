@@ -106,7 +106,9 @@ async def list_transactions(
 
     if account_id:
         conditions.append(
-            "EXISTS (SELECT 1 FROM entries e WHERE e.transaction_id = t.id AND e.account_id = :account_id)"
+            "EXISTS ("
+            "SELECT 1 FROM entries e "
+            "WHERE e.transaction_id = t.id AND e.account_id = :account_id)"
         )
         params["account_id"] = str(account_id)
 

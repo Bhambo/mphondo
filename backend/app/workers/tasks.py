@@ -43,8 +43,9 @@ async def refresh_fx_rates(ctx: dict) -> dict:
         rate = await get_fx_rate(redis, base="EUR", target="MZN")
         log.info("worker_fx_refreshed", eur_mzn=str(rate))
 
-        from app.core.database import AsyncSessionLocal
         from sqlalchemy import text
+
+        from app.core.database import AsyncSessionLocal
 
         async with AsyncSessionLocal() as db:
             await db.execute(
@@ -79,8 +80,9 @@ async def send_push(ctx: dict, topic: str, title: str, message: str) -> None:
 
 async def check_budgets(ctx: dict, user_id: str) -> dict:
     """Check if any budget has exceeded its alert threshold and push notification."""
-    from app.core.database import AsyncSessionLocal
     from sqlalchemy import text
+
+    from app.core.database import AsyncSessionLocal
 
     alerts_sent = 0
     async with AsyncSessionLocal() as db:

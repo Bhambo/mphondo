@@ -1,5 +1,5 @@
-import uuid
 from typing import Literal
+import uuid
 
 from fastapi import APIRouter, Query, status
 
