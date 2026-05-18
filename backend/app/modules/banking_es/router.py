@@ -14,8 +14,8 @@ from app.core.deps import DB, CurrentUser
 from app.modules.banking_es.schemas import (
     BankConnectionCreate,
     BankConnectionOut,
-    CSVImportOut,
     CategoryRuleCreate,
+    CSVImportOut,
 )
 
 router = APIRouter()

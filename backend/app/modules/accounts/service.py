@@ -20,8 +20,12 @@ async def list_accounts(db: AsyncSession, user_id: uuid.UUID) -> list:
 async def create_account(db: AsyncSession, user_id: uuid.UUID, data: AccountCreate) -> dict:
     result = await db.execute(
         text("""
-            INSERT INTO accounts (user_id, name, account_type, currency, module_context, iban, phone, color, icon)
-            VALUES (:uid, :name, :account_type, :currency, :module_context, :iban, :phone, :color, :icon)
+            INSERT INTO accounts
+                (user_id, name, account_type, currency, module_context,
+                 iban, phone, color, icon)
+            VALUES
+                (:uid, :name, :account_type, :currency, :module_context,
+                 :iban, :phone, :color, :icon)
             RETURNING *
         """),
         {

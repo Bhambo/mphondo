@@ -8,13 +8,13 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.core.config import settings
 from app.core.database import engine
 from app.core.logging import configure_logging
+from app.modules.accounts.router import router as accounts_router
+from app.modules.analytics.router import router as analytics_router
+from app.modules.banking_es.router import router as banking_es_router
+from app.modules.budgets.router import router as budgets_router
 from app.modules.ledger.router import router as ledger_router
 from app.modules.mpesa.router import router as mpesa_router
-from app.modules.banking_es.router import router as banking_es_router
 from app.modules.xitiqui.router import router as xitiqui_router
-from app.modules.analytics.router import router as analytics_router
-from app.modules.accounts.router import router as accounts_router
-from app.modules.budgets.router import router as budgets_router
 
 configure_logging()
 log = structlog.get_logger()

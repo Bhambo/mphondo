@@ -6,13 +6,12 @@ give a friendlier error before hitting the DB.
 """
 
 import uuid
-from decimal import Decimal
 
 import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.ledger.schemas import EntryIn, TransactionCreate
+from app.modules.ledger.schemas import TransactionCreate
 
 log = structlog.get_logger()
 
@@ -124,8 +123,8 @@ async def list_transactions(
         params["to_date"] = to_date
 
     where = " AND ".join(conditions)
-    # where is built from hardcoded strings only; all user values are bound params
-    query = f"SELECT t.* FROM transactions t WHERE {where} ORDER BY t.occurred_at DESC LIMIT :limit OFFSET :offset"  # noqa: S608
+    order = "ORDER BY t.occurred_at DESC LIMIT :limit OFFSET :offset"
+    query = f"SELECT t.* FROM transactions t WHERE {where} {order}"  # noqa: S608
     result = await db.execute(
         text(query),
         params,

@@ -164,7 +164,6 @@ def parse_pdf(file_bytes: bytes) -> list[ParsedOperation]:
 def _ocr_fallback(file_bytes: bytes) -> list[str]:
     try:
         import pytesseract
-        from PIL import Image
 
         with pdfplumber.open(BytesIO(file_bytes)) as pdf:
             lines = []

@@ -71,7 +71,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "S", "B", "C4", "PTH"]
-ignore = ["S101"]   # assert allowed in tests
+ignore = ["S101", "B008"]   # S101: assert in tests; B008: FastAPI Query/Form/File defaults
 
 [tool.mypy]
 python_version = "3.12"

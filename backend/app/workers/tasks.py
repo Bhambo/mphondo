@@ -8,7 +8,6 @@ Tasks:
 """
 
 import uuid
-from datetime import timedelta
 
 import httpx
 import structlog
