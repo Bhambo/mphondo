@@ -3,6 +3,7 @@ import { ScrollView, View, Text, StyleSheet, RefreshControl } from "react-native
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useModuleStore } from "@/stores/module.store";
 import { useTransactionsStore } from "@/stores/transactions.store";
+import { useAccountsStore } from "@/stores/accounts.store";
 import { Colors, moduleColors } from "@/lib/theme";
 import { formatCurrency, formatRelativeDate } from "@/lib/formatters";
 
@@ -70,13 +71,22 @@ function RecentTxRow({
 export default function DashboardScreen() {
   const { activeModule } = useModuleStore();
   const { transactions, fetchTransactions, isLoading } = useTransactionsStore();
+  const { fetchAccounts, totalBalance } = useAccountsStore();
   const mc = moduleColors(activeModule);
 
   useEffect(() => {
-    fetchTransactions(true);
-  }, [activeModule, fetchTransactions]);
+    fetchTransactions(true, activeModule);
+    fetchAccounts();
+  }, [activeModule, fetchTransactions, fetchAccounts]);
 
   const recent = transactions.slice(0, 8);
+  const balance = totalBalance(activeModule);
+  const currency = activeModule === "mz" ? "MZN" : "EUR";
+
+  const onRefresh = () => {
+    fetchTransactions(true, activeModule);
+    fetchAccounts();
+  };
 
   return (
     <SafeAreaView
@@ -88,20 +98,18 @@ export default function DashboardScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
-            onRefresh={() => fetchTransactions(true)}
+            onRefresh={onRefresh}
             tintColor={mc.primary}
           />
         }
       >
-        {/* Balance cards */}
         <BalanceCard
-          balance={0}
-          currency={activeModule === "mz" ? "MZN" : "EUR"}
+          balance={balance}
+          currency={currency}
           label={activeModule === "mz" ? "Saldo M-Pesa" : "Saldo total"}
           accent={mc.primary}
         />
 
-        {/* Recent transactions */}
         <View>
           <Text style={styles.sectionTitle}>Recentes</Text>
           <View style={styles.txCard}>

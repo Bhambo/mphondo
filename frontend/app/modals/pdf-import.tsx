@@ -14,6 +14,9 @@ import * as DocumentPicker from "expo-document-picker";
 import { Colors } from "@/lib/theme";
 import { api } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { useTransactionsStore } from "@/stores/transactions.store";
+import { useAccountsStore } from "@/stores/accounts.store";
+import { useModuleStore } from "@/stores/module.store";
 
 interface ParseResult {
   statement_id: string;
@@ -23,6 +26,9 @@ interface ParseResult {
 }
 
 export default function PdfImportModal() {
+  const { activeModule } = useModuleStore();
+  const { fetchTransactions } = useTransactionsStore();
+  const { fetchAccounts } = useAccountsStore();
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileUri, setFileUri] = useState<string | null>(null);
   const [result, setResult] = useState<ParseResult | null>(null);
@@ -56,7 +62,7 @@ export default function PdfImportModal() {
       if (!session) throw new Error("Sem sessão");
 
       const apiBase = process.env.EXPO_PUBLIC_API_URL ?? "https://mphondo.local/api/v1";
-      const fetchRes = await fetch(`${apiBase}/mpesa/upload-pdf`, {
+      const fetchRes = await fetch(`${apiBase}/mpesa/statements/upload`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: formData,
@@ -67,6 +73,8 @@ export default function PdfImportModal() {
       }
       const data: ParseResult = await fetchRes.json();
       setResult(data);
+      fetchTransactions(true, activeModule);
+      fetchAccounts();
     } catch (err) {
       Alert.alert("Erro", err instanceof Error ? err.message : "Erro no upload");
     } finally {

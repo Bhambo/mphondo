@@ -5,6 +5,9 @@ module.exports = function (api) {
       require.resolve("babel-preset-expo"),
       require.resolve("nativewind/babel"),
     ],
-    plugins: [require.resolve("react-native-reanimated/plugin")],
+    plugins: [
+      require.resolve("babel-plugin-transform-import-meta"),
+      require.resolve("react-native-reanimated/plugin"),
+    ],
   };
 };

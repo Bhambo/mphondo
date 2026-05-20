@@ -14,6 +14,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/lib/theme";
 import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/formatters";
+import { useTransactionsStore } from "@/stores/transactions.store";
+import { useAccountsStore } from "@/stores/accounts.store";
+import { useModuleStore } from "@/stores/module.store";
 
 interface ParsedOp {
   op_type: string;
@@ -26,6 +29,9 @@ interface ParsedOp {
 }
 
 export default function SmsImportModal() {
+  const { activeModule } = useModuleStore();
+  const { fetchTransactions } = useTransactionsStore();
+  const { fetchAccounts } = useAccountsStore();
   const [smsText, setSmsText] = useState("");
   const [parsed, setParsed] = useState<ParsedOp[] | null>(null);
   const [isParsing, setIsParsing] = useState(false);
@@ -51,6 +57,8 @@ export default function SmsImportModal() {
     setIsConfirming(true);
     try {
       await api.post("/mpesa/confirm-sms", { operations: parsed });
+      fetchTransactions(true, activeModule);
+      fetchAccounts();
       Alert.alert("Importado!", `${parsed.length} operação(ões) registadas.`, [
         { text: "OK", onPress: () => router.back() },
       ]);

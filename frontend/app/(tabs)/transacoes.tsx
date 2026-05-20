@@ -63,12 +63,12 @@ export default function TransacoesScreen() {
   const mc = moduleColors(activeModule);
 
   useEffect(() => {
-    fetchTransactions(true);
+    fetchTransactions(true, activeModule);
   }, [activeModule, fetchTransactions]);
 
   const onEndReached = useCallback(() => {
-    if (hasMore && !isLoading) fetchTransactions();
-  }, [hasMore, isLoading, fetchTransactions]);
+    if (hasMore && !isLoading) fetchTransactions(false, activeModule);
+  }, [hasMore, isLoading, fetchTransactions, activeModule]);
 
   return (
     <SafeAreaView
@@ -87,7 +87,7 @@ export default function TransacoesScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isLoading && transactions.length === 0}
-            onRefresh={() => fetchTransactions(true)}
+            onRefresh={() => fetchTransactions(true, activeModule)}
             tintColor={mc.primary}
           />
         }

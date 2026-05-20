@@ -81,11 +81,13 @@ export default function QuickEntryModal() {
         description: description.trim(),
         occurred_at: new Date().toISOString(),
         module: activeModule,
+        status: "confirmed",
+        is_transfer: false,
+        category_id: null,
         category_name: null,
         category_color: null,
         net_amount: selectedType.dir === "entrada" ? parsed : -parsed,
         currency: activeModule === "mz" ? "MZN" : "EUR",
-        deleted_at: null,
       });
       router.back();
     } catch (err) {
