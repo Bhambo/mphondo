@@ -112,6 +112,7 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       FX_API_KEY: ${FX_API_KEY:-}
       NTFY_URL: ${NTFY_URL:-}          # ntfy.sh para push notifications

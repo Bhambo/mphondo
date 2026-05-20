@@ -11,6 +11,7 @@ import uuid
 
 import httpx
 import structlog
+from arq import cron
 from arq.connections import RedisSettings
 from redis.asyncio import Redis
 
@@ -135,12 +136,7 @@ class WorkerSettings:
 
     # Cron jobs
     cron_jobs = [
-        # Refresh FX rates every 4 hours
-        {
-            "coroutine": refresh_fx_rates,
-            "hour": {0, 4, 8, 12, 16, 20},
-            "minute": 15,
-        },
+        cron(refresh_fx_rates, hour={0, 4, 8, 12, 16, 20}, minute=15),
     ]
 
     max_jobs = 10
