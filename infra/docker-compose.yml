@@ -118,6 +118,8 @@ services:
       NTFY_URL: ${NTFY_URL:-}          # ntfy.sh para push notifications
       NTFY_TOPIC: ${NTFY_TOPIC:-mphondo}
       ENVIRONMENT: ${ENVIRONMENT:-production}
+    healthcheck:
+      disable: true
     volumes:
       - api_uploads:/app/uploads
     networks:
