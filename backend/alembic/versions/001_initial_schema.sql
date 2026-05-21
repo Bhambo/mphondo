@@ -742,3 +742,22 @@ CREATE TRIGGER trg_profiles_updated_at   BEFORE UPDATE ON profiles   FOR EACH RO
 CREATE TRIGGER trg_accounts_updated_at   BEFORE UPDATE ON accounts   FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_transactions_updated_at BEFORE UPDATE ON transactions FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_loans_updated_at      BEFORE UPDATE ON loans      FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+-- Auto-create profile row when a new user signs up via Supabase Auth
+CREATE OR REPLACE FUNCTION fn_create_profile_on_signup()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  INSERT INTO public.profiles (id, display_name, email, default_currency)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1)),
+    NEW.email,
+    'EUR'
+  ) ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_create_profile_on_signup
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION fn_create_profile_on_signup();
