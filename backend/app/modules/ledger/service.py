@@ -125,11 +125,23 @@ async def list_transactions(
     where = " AND ".join(conditions)
     order = "ORDER BY t.occurred_at DESC LIMIT :limit OFFSET :offset"
     query = f"SELECT t.* FROM transactions t WHERE {where} {order}"  # noqa: S608
-    result = await db.execute(
-        text(query),
-        params,
+    result = await db.execute(text(query), params)
+    txs = list(result.mappings().all())
+
+    if not txs:
+        return []
+
+    id_params = {f"id{i}": str(t["id"]) for i, t in enumerate(txs)}
+    placeholders = ", ".join(f":id{i}" for i in range(len(txs)))
+    entries_result = await db.execute(
+        text(f"SELECT * FROM entries WHERE transaction_id IN ({placeholders})"),  # noqa: S608
+        id_params,
     )
-    return list(result.mappings().all())
+    entries_by_tx: dict[str, list] = {}
+    for e in entries_result.mappings().all():
+        entries_by_tx.setdefault(str(e["transaction_id"]), []).append(dict(e))
+
+    return [{**dict(t), "entries": entries_by_tx.get(str(t["id"]), [])} for t in txs]
 
 
 async def soft_delete_transaction(db: AsyncSession, user_id: uuid.UUID, tx_id: uuid.UUID) -> bool:

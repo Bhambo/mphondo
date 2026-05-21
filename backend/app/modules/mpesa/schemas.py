@@ -36,6 +36,23 @@ class MpesaTransactionCreate(BaseModel):
     fx_rate_snapshot: Decimal | None = None  # EUR/MZN at time of operation
 
 
+class ManualEntryCreate(BaseModel):
+    """Simplified manual entry — backend resolves accounts and builds double-entry."""
+
+    op_type: str = Field(..., max_length=50)
+    direction: Literal["entrada", "saida"]
+    amount: Decimal = Field(..., gt=0, decimal_places=4)
+    description: str = Field(..., min_length=1, max_length=500)
+    module: Literal["mz", "es"]
+    occurred_at: str
+    counterpart: str | None = Field(None, max_length=120)
+    reference: str | None = Field(None, max_length=100)
+
+
+class ManualEntryOut(BaseModel):
+    transaction_id: uuid.UUID
+
+
 class MpesaRawTxOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

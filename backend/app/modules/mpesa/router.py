@@ -4,11 +4,25 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
 from app.core.deps import DB, CurrentUser
 from app.modules.mpesa import service
-from app.modules.mpesa.schemas import MpesaRawTxOut, StatementUploadOut
+from app.modules.mpesa.schemas import (
+    ManualEntryCreate,
+    ManualEntryOut,
+    MpesaRawTxOut,
+    StatementUploadOut,
+)
 
 router = APIRouter()
 
 _MAX_PDF_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+@router.post("/manual", response_model=ManualEntryOut, status_code=status.HTTP_201_CREATED)
+async def create_manual_transaction(
+    data: ManualEntryCreate,
+    db: DB,
+    current_user: CurrentUser,
+):
+    return await service.create_manual_entry(db, current_user, data)
 
 
 @router.post("/statements/upload", response_model=StatementUploadOut)

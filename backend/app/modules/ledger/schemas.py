@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -57,7 +58,7 @@ class TransactionOut(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     description: str
-    occurred_at: str
+    occurred_at: datetime
     status: str
     module: str
     currency: str

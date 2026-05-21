@@ -67,6 +67,7 @@ export default function QuickEntryModal() {
     try {
       const payload = {
         op_type: opType,
+        direction: selectedType.dir,
         amount: parsed,
         description: description.trim(),
         counterpart: counterpart.trim() || null,
