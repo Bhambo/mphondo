@@ -343,6 +343,8 @@ services:
     platform: linux/arm64
     container_name: mphondo-caddy
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "80:80"
       - "443:443"

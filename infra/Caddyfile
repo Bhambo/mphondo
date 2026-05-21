@@ -96,8 +96,9 @@
   }
 
   # ---  Webhook auto-deploy (solo desde la red local) ---
+  # host.docker.internal resuelve a docker0 (172.17.0.1) via extra_hosts
   handle /webhook {
-    reverse_proxy localhost:9000
+    reverse_proxy host.docker.internal:9000
   }
 
   # ---  Frontend web (Expo web build) ---
