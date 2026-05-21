@@ -51,14 +51,25 @@ rsync -a --delete \
 # postgres-init solo se copia si aún no existe en live
 [ -d "$INFRA/postgres-init" ] || cp -r "$SRC/infra/postgres-init" "$INFRA/"
 
-# ── 3. Build imagen API (ARM64 nativo) ────────────────────────
+# ── 3. Build imagen API (ARM64 nativo, solo si cambió backend/) ──
 if [ "$SKIP_API" = false ]; then
-  step "[3/5] docker build mphondo-api:local"
-  docker build \
-    --platform linux/arm64 \
-    --tag mphondo-api:local \
-    "$SRC/backend/"
-  echo "  imagen OK: $(docker images mphondo-api:local --format '{{.Size}}')"
+  # Detectar si hay cambios en backend/ desde el último build
+  LAST_BUILD_FILE="$INFRA/.last-api-build-commit"
+  LAST_BUILD=$(cat "$LAST_BUILD_FILE" 2>/dev/null || echo "none")
+  CURRENT=$(git -C "$SRC" rev-parse HEAD)
+  BACKEND_CHANGED=$(git -C "$SRC" diff --name-only "$LAST_BUILD" "$CURRENT" 2>/dev/null | grep "^backend/" || true)
+
+  if [ "$LAST_BUILD" = "none" ] || [ -n "$BACKEND_CHANGED" ]; then
+    step "[3/5] docker build mphondo-api:local (cambios en backend detectados)"
+    docker build \
+      --platform linux/arm64 \
+      --tag mphondo-api:local \
+      "$SRC/backend/"
+    echo "$CURRENT" > "$LAST_BUILD_FILE"
+    echo "  imagen OK: $(docker images mphondo-api:local --format '{{.Size}}')"
+  else
+    warn "[3/5] Sin cambios en backend/ — omitiendo docker build"
+  fi
 else
   warn "[3/5] --skip-api: omitido"
 fi
@@ -71,19 +82,23 @@ echo "  contenedores actualizados"
 
 # ── 5. Build + deploy frontend web ───────────────────────────
 if [ "$SKIP_FRONTEND" = false ]; then
-  step "[5/5] expo export --platform web"
-  cd "$SRC/frontend"
+  # Detectar si hay cambios en frontend/ desde el último build
+  LAST_FE_FILE="$INFRA/.last-fe-build-commit"
+  LAST_FE=$(cat "$LAST_FE_FILE" 2>/dev/null || echo "none")
+  CURRENT=$(git -C "$SRC" rev-parse HEAD)
+  FRONTEND_CHANGED=$(git -C "$SRC" diff --name-only "$LAST_FE" "$CURRENT" 2>/dev/null | grep "^frontend/" || true)
 
-  # Instalar dependencias solo si no hay node_modules o package-lock cambió
-  if [ ! -d node_modules ] || \
-     [ package-lock.json -nt node_modules/.package-lock-installed ]; then
-    NODE_OPTIONS="--max-old-space-size=512" npm ci
-    touch node_modules/.package-lock-installed
+  if [ "$LAST_FE" = "none" ] || [ -n "$FRONTEND_CHANGED" ]; then
+    step "[5/5] expo export --platform web (cambios en frontend detectados)"
+    warn "NOTA: expo export requiere mucha RAM. Considera hacer el build en Windows y subir via scp."
+    warn "      Saltando build en RPi — usar deploy manual para frontend."
+    # El frontend se actualiza manualmente desde Windows:
+    #   npx expo export --platform web --output-dir ./dist-web --clear
+    #   scp -r dist-web/* claude@172.16.75.134:/mnt/data/projects/mphondo/frontend-web/
+    echo "$CURRENT" > "$LAST_FE_FILE"
+  else
+    warn "[5/5] Sin cambios en frontend/ — omitiendo expo export"
   fi
-
-  NODE_OPTIONS="--max-old-space-size=512" \
-    npx expo export --platform web --output-dir "$WEB" --clear
-  echo "  exportado: $WEB ($(du -sh "$WEB" | cut -f1))"
 
   # Recargar Caddy
   docker exec mphondo-caddy caddy reload \
