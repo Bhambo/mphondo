@@ -24,7 +24,7 @@ async def create_transaction(db: AsyncSession, user_id: uuid.UUID, data: Transac
                  category_id, contact_id, fx_rate_id, fx_rate_snapshot,
                  reference, notes)
             VALUES
-                (:uid, :module, :currency, :description, :occurred_at::timestamptz,
+                (:uid, :module, :currency, :description, CAST(:occurred_at AS timestamptz),
                  :category_id, :contact_id, :fx_rate_id, :fx_rate_snapshot,
                  :reference, :notes)
             RETURNING *
@@ -115,11 +115,11 @@ async def list_transactions(
         params["category_id"] = str(category_id)
 
     if from_date:
-        conditions.append("t.occurred_at >= :from_date::timestamptz")
+        conditions.append("t.occurred_at >= CAST(:from_date AS timestamptz)")
         params["from_date"] = from_date
 
     if to_date:
-        conditions.append("t.occurred_at <= :to_date::timestamptz")
+        conditions.append("t.occurred_at <= CAST(:to_date AS timestamptz)")
         params["to_date"] = to_date
 
     where = " AND ".join(conditions)
