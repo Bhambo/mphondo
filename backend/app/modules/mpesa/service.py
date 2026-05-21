@@ -8,14 +8,13 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.ledger import service as ledger_service
-from app.modules.ledger.schemas import EntryIn, TransactionCreate
+from app.modules.ledger.schemas import CurrencyCode, EntryIn, TransactionCreate
 from app.modules.mpesa import parser as mpesa_parser
 from app.modules.mpesa.schemas import ManualEntryCreate
 
 log = structlog.get_logger()
 
 _ACCOUNT_TYPE_BY_MODULE = {"mz": "mpesa", "es": "bank_es"}
-_CURRENCY_BY_MODULE = {"mz": "MZN", "es": "EUR"}
 
 
 async def _get_or_create_virtual(
@@ -55,7 +54,7 @@ async def _get_or_create_virtual(
 async def create_manual_entry(
     db: AsyncSession, user_id: uuid.UUID, data: ManualEntryCreate
 ) -> dict:
-    currency = _CURRENCY_BY_MODULE[data.module]
+    currency: CurrencyCode = "MZN" if data.module == "mz" else "EUR"
     acct_type = _ACCOUNT_TYPE_BY_MODULE[data.module]
 
     real_row = (
