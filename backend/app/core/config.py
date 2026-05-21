@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str
 
     # ── CORS ───────────────────────────────────────────────────────────────
+    # Dev: Expo Go client. Prod: same-origin (frontend servido desde Caddy).
+    # Añadir CORS_ORIGINS en .env para producción: http://172.16.75.134,http://100.119.123.108
     CORS_ORIGINS: list[str] = ["http://localhost:8081", "exp://localhost:8081"]
 
     @field_validator("CORS_ORIGINS", mode="before")

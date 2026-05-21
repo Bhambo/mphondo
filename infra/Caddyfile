@@ -52,6 +52,13 @@
   #   }
   # }
 
+  # ---  Prometheus metrics — solo desde la red interna (Prometheus container) ---
+  handle /api/metrics {
+    @external not remote_ip 172.16.0.0/12 127.0.0.1 ::1
+    respond @external "Forbidden" 403
+    reverse_proxy {$API_UPSTREAM:?API_UPSTREAM not set}
+  }
+
   # ---  FastAPI API  ---
   handle /api/* {
     reverse_proxy {$API_UPSTREAM:?API_UPSTREAM not set} {

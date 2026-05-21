@@ -16,6 +16,7 @@ import logging
 import os
 import subprocess
 import threading
+import time
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +30,10 @@ DEPLOY_SCRIPT = os.environ.get(
     "DEPLOY_SCRIPT",
     "/mnt/data/projects/mphondo/src/infra/deploy.sh",
 )
+DEPLOY_COOLDOWN = 30  # segundos mínimos entre deploys
+
+_deploy_lock = threading.Lock()
+_last_deploy: float = 0.0
 
 
 def verify_signature(body: bytes, signature: str) -> bool:
@@ -92,11 +97,31 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
         # Solo deployar en push a main
         if gh_event == "push" and ref == "refs/heads/main":
+            global _last_deploy
+            now = time.monotonic()
+            if not _deploy_lock.acquire(blocking=False):
+                log.warning("Deploy already in progress — ignoring push")
+                self.send_response(429)
+                self.end_headers()
+                self.wfile.write(b"Deploy in progress")
+                return
+            if now - _last_deploy < DEPLOY_COOLDOWN:
+                _deploy_lock.release()
+                log.warning("Deploy cooldown active — ignoring push")
+                self.send_response(429)
+                self.end_headers()
+                self.wfile.write(b"Cooldown")
+                return
+            _last_deploy = now
             self.send_response(202)
             self.end_headers()
             self.wfile.write(b"Deploying")
-            thread = threading.Thread(target=run_deploy, daemon=True)
-            thread.start()
+            def _deploy_and_release():
+                try:
+                    run_deploy()
+                finally:
+                    _deploy_lock.release()
+            threading.Thread(target=_deploy_and_release, daemon=True).start()
         else:
             self.send_response(200)
             self.end_headers()
