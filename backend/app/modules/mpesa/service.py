@@ -41,8 +41,11 @@ async def _get_or_create_virtual(
             RETURNING id
         """),
         {
-            "uid": str(user_id), "name": name, "vtype": virtual_type,
-            "currency": currency, "mod": module,
+            "uid": str(user_id),
+            "name": name,
+            "vtype": virtual_type,
+            "currency": currency,
+            "mod": module,
         },
     )
     await db.commit()
@@ -56,16 +59,20 @@ async def create_manual_entry(
     acct_type = _ACCOUNT_TYPE_BY_MODULE[data.module]
 
     real_row = (
-        await db.execute(
-            text("""
+        (
+            await db.execute(
+                text("""
                 SELECT id FROM accounts
                 WHERE user_id = :uid AND account_type = :atype
                   AND module_context = :mod AND is_active = true AND deleted_at IS NULL
                 ORDER BY sort_order, created_at LIMIT 1
             """),
-            {"uid": str(user_id), "atype": acct_type, "mod": data.module},
+                {"uid": str(user_id), "atype": acct_type, "mod": data.module},
+            )
         )
-    ).mappings().one_or_none()
+        .mappings()
+        .one_or_none()
+    )
 
     if not real_row:
         raise HTTPException(
