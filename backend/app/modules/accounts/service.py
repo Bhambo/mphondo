@@ -18,7 +18,7 @@ async def list_accounts(db: AsyncSession, user_id: uuid.UUID) -> list:
 
 
 async def create_account(db: AsyncSession, user_id: uuid.UUID, data: AccountCreate) -> dict:
-    result = await db.execute(
+    insert_result = await db.execute(
         text("""
             INSERT INTO accounts
                 (user_id, name, account_type, currency, module_context,
@@ -26,7 +26,7 @@ async def create_account(db: AsyncSession, user_id: uuid.UUID, data: AccountCrea
             VALUES
                 (:uid, :name, :account_type, :currency, :module_context,
                  :iban, :phone, :color, :icon)
-            RETURNING *
+            RETURNING id
         """),
         {
             "uid": str(user_id),
@@ -41,9 +41,13 @@ async def create_account(db: AsyncSession, user_id: uuid.UUID, data: AccountCrea
         },
     )
     await db.commit()
-    row = result.mappings().one()
-    log.info("account_created", account_id=str(row["id"]), user_id=str(user_id))
-    return dict(row)
+    new_id = insert_result.scalar_one()
+    log.info("account_created", account_id=str(new_id), user_id=str(user_id))
+    view_result = await db.execute(
+        text("SELECT * FROM v_account_balances WHERE id = :aid"),
+        {"aid": str(new_id)},
+    )
+    return dict(view_result.mappings().one())
 
 
 async def update_account(
@@ -60,5 +64,12 @@ async def update_account(
 
     result = await db.execute(text(query), params)
     await db.commit()
-    row = result.mappings().one_or_none()
+    updated = result.mappings().one_or_none()
+    if not updated:
+        return None
+    view_result = await db.execute(
+        text("SELECT * FROM v_account_balances WHERE id = :aid"),
+        {"aid": str(account_id)},
+    )
+    row = view_result.mappings().one_or_none()
     return dict(row) if row else None
