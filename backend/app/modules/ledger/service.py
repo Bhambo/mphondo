@@ -6,6 +6,7 @@ give a friendlier error before hitting the DB.
 """
 
 import uuid
+from datetime import datetime
 
 import structlog
 from sqlalchemy import text
@@ -34,7 +35,7 @@ async def create_transaction(db: AsyncSession, user_id: uuid.UUID, data: Transac
             "module": data.module,
             "currency": data.currency,
             "description": data.description,
-            "occurred_at": data.occurred_at,
+            "occurred_at": datetime.fromisoformat(data.occurred_at),
             "category_id": str(data.category_id) if data.category_id else None,
             "contact_id": str(data.contact_id) if data.contact_id else None,
             "fx_rate_id": str(data.fx_rate_id) if data.fx_rate_id else None,
@@ -115,12 +116,12 @@ async def list_transactions(
         params["category_id"] = str(category_id)
 
     if from_date:
-        conditions.append("t.occurred_at >= CAST(:from_date AS timestamptz)")
-        params["from_date"] = from_date
+        conditions.append("t.occurred_at >= :from_date")
+        params["from_date"] = datetime.fromisoformat(from_date)
 
     if to_date:
-        conditions.append("t.occurred_at <= CAST(:to_date AS timestamptz)")
-        params["to_date"] = to_date
+        conditions.append("t.occurred_at <= :to_date")
+        params["to_date"] = datetime.fromisoformat(to_date)
 
     where = " AND ".join(conditions)
     order = "ORDER BY t.occurred_at DESC LIMIT :limit OFFSET :offset"

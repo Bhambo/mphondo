@@ -194,7 +194,7 @@ async def _store_parsed_ops(
                     :raw_amount,
                     :raw_balance,
                     :raw_party,
-                    CAST(:raw_date AS timestamptz),
+                    :raw_date,
                     :raw_description
                 FROM mpesa_statements s WHERE s.id = :sid
                 ON CONFLICT (user_id, raw_ref) WHERE raw_ref IS NOT NULL DO NOTHING
