@@ -17,51 +17,51 @@ log = structlog.get_logger()
 
 
 async def create_transaction(db: AsyncSession, user_id: uuid.UUID, data: TransactionCreate) -> dict:
-    async with db.begin():
-        result = await db.execute(
+    result = await db.execute(
+        text("""
+            INSERT INTO transactions
+                (user_id, module, currency, description, occurred_at,
+                 category_id, contact_id, fx_rate_id, fx_rate_snapshot,
+                 reference, notes)
+            VALUES
+                (:uid, :module, :currency, :description, :occurred_at::timestamptz,
+                 :category_id, :contact_id, :fx_rate_id, :fx_rate_snapshot,
+                 :reference, :notes)
+            RETURNING *
+        """),
+        {
+            "uid": str(user_id),
+            "module": data.module,
+            "currency": data.currency,
+            "description": data.description,
+            "occurred_at": data.occurred_at,
+            "category_id": str(data.category_id) if data.category_id else None,
+            "contact_id": str(data.contact_id) if data.contact_id else None,
+            "fx_rate_id": str(data.fx_rate_id) if data.fx_rate_id else None,
+            "fx_rate_snapshot": data.fx_rate_snapshot,
+            "reference": data.reference,
+            "notes": data.notes,
+        },
+    )
+    tx = result.mappings().one()
+    tx_id = tx["id"]
+
+    for entry in data.entries:
+        await db.execute(
             text("""
-                INSERT INTO transactions
-                    (user_id, module, currency, description, occurred_at,
-                     category_id, contact_id, fx_rate_id, fx_rate_snapshot,
-                     reference, notes)
-                VALUES
-                    (:uid, :module, :currency, :description, :occurred_at::timestamptz,
-                     :category_id, :contact_id, :fx_rate_id, :fx_rate_snapshot,
-                     :reference, :notes)
-                RETURNING *
+                INSERT INTO entries (transaction_id, account_id, direction, amount, notes)
+                VALUES (:tx_id, :account_id, :direction, :amount, :notes)
             """),
             {
-                "uid": str(user_id),
-                "module": data.module,
-                "currency": data.currency,
-                "description": data.description,
-                "occurred_at": data.occurred_at,
-                "category_id": str(data.category_id) if data.category_id else None,
-                "contact_id": str(data.contact_id) if data.contact_id else None,
-                "fx_rate_id": str(data.fx_rate_id) if data.fx_rate_id else None,
-                "fx_rate_snapshot": data.fx_rate_snapshot,
-                "reference": data.reference,
-                "notes": data.notes,
+                "tx_id": str(tx_id),
+                "account_id": str(entry.account_id),
+                "direction": entry.direction,
+                "amount": entry.amount,
+                "notes": entry.notes,
             },
         )
-        tx = result.mappings().one()
-        tx_id = tx["id"]
 
-        for entry in data.entries:
-            await db.execute(
-                text("""
-                    INSERT INTO entries (transaction_id, account_id, direction, amount, notes)
-                    VALUES (:tx_id, :account_id, :direction, :amount, :notes)
-                """),
-                {
-                    "tx_id": str(tx_id),
-                    "account_id": str(entry.account_id),
-                    "direction": entry.direction,
-                    "amount": entry.amount,
-                    "notes": entry.notes,
-                },
-            )
-
+    await db.commit()
     log.info("transaction_created", tx_id=str(tx_id), user_id=str(user_id))
     tx_out = await get_transaction(db, user_id, tx_id)
     assert tx_out is not None
