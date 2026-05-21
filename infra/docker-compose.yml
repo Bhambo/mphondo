@@ -58,7 +58,7 @@ services:
   # FastAPI — Backend principal
   # -----------------------------------------------------------
   api:
-    image: ghcr.io/${GITHUB_REPOSITORY:-bhambo/mphondo}/mphondo-api:${API_TAG:-stable}
+    image: mphondo-api:local
     platform: linux/arm64
     container_name: mphondo-api
     restart: unless-stopped
@@ -96,7 +96,7 @@ services:
   # Arq Worker — jobs asíncronos (PDF parser, FX, notificaciones)
   # -----------------------------------------------------------
   worker:
-    image: ghcr.io/${GITHUB_REPOSITORY:-bhambo/mphondo}/mphondo-api:${API_TAG:-stable}
+    image: mphondo-api:local
     platform: linux/arm64
     container_name: mphondo-worker
     restart: unless-stopped
@@ -355,28 +355,9 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - ${FRONTEND_ROOT:-/mnt/data/projects/mphondo/frontend-web}:/srv/frontend:ro
     networks:
       - proxy
-
-  # -----------------------------------------------------------
-  # Watchtower — auto-actualización de imágenes (CD)
-  # -----------------------------------------------------------
-  watchtower:
-    image: containrrr/watchtower:latest
-    platform: linux/arm64
-    container_name: mphondo-watchtower
-    restart: unless-stopped
-    environment:
-      WATCHTOWER_POLL_INTERVAL: 300          # comprobar cada 5 min
-      WATCHTOWER_CLEANUP: "true"
-      DOCKER_API_VERSION: "1.41"
-      WATCHTOWER_INCLUDE_STOPPED: "false"
-      WATCHTOWER_LABEL_ENABLE: "true"        # sólo actualiza contenedores con label
-      REPO_USER: ${GITHUB_ACTOR:-}
-      REPO_PASS: ${GHCR_TOKEN:-}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: mphondo-api mphondo-worker   # sólo actualiza api y worker
 
 # =============================================================
 # NETWORKS

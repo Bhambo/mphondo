@@ -95,8 +95,15 @@
     respond "OK" 200
   }
 
-  # Fallback — 404
+  # ---  Webhook auto-deploy (solo desde la red local) ---
+  handle /webhook {
+    reverse_proxy localhost:9000
+  }
+
+  # ---  Frontend web (Expo web build) ---
   handle {
-    respond "Not Found" 404
+    root * /srv/frontend
+    try_files {path} /index.html
+    file_server
   }
 }

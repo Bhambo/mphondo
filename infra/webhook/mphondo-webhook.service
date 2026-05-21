@@ -1,0 +1,25 @@
+[Unit]
+Description=Mphondo GitHub Webhook Listener
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=claude
+Group=claude
+WorkingDirectory=/mnt/data/projects/mphondo/src/infra/webhook
+ExecStart=/usr/bin/python3 /mnt/data/projects/mphondo/src/infra/webhook/webhook.py
+Restart=on-failure
+RestartSec=5s
+
+EnvironmentFile=/mnt/data/projects/mphondo/infra/.env.webhook
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mphondo-webhook
+
+# Seguridad básica
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

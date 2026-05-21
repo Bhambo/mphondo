@@ -9,10 +9,6 @@ on:
     branches: [main]
     paths: [backend/**]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/mphondo-api
-
 jobs:
   # ── Lint + Type check ─────────────────────────────────────────────────────
   lint:
@@ -54,7 +50,6 @@ jobs:
         working-directory: backend
 
     env:
-      # Minimal env for tests (SQLite overrides DB URL in conftest)
       SECRET_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
       ENCRYPTION_KEY: "00000000000000000000000000000000"
       SUPABASE_JWT_SECRET: "test-secret"
@@ -76,7 +71,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv pip install --system -e ".[dev]"
-          pip install aiosqlite  # SQLite async driver for tests
+          pip install aiosqlite
 
       - name: Run tests
         run: pytest -x -q
@@ -84,81 +79,3 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         if: always()
-
-  # ── Build & Push Docker image (arm64) ────────────────────────────────────
-  build:
-    name: Build arm64 Image
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up QEMU (for arm64 cross-build)
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-
-            type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Build and push (arm64)
-        uses: docker/build-push-action@v6
-        with:
-          context: backend
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ── Security scan ─────────────────────────────────────────────────────────
-  security:
-    name: Trivy Security Scan
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      security-events: write
-
-    steps:
-      - name: Lowercase image ref
-        id: image
-        run: echo "ref=$(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
-      - name: Run Trivy on image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ steps.image.outputs.ref }}
-          format: sarif
-          output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          exit-code: 0
-
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: trivy-results.sarif
