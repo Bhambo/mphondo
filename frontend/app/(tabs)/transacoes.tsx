@@ -79,7 +79,7 @@ export default function TransacoesScreen() {
         data={transactions}
         keyExtractor={(t) => t.id}
         renderItem={({ item }) => <TxItem item={item} />}
-        estimatedItemSize={68}
+
         ItemSeparatorComponent={SeparatorLine}
         contentContainerStyle={{ paddingBottom: 80 }}
         onEndReached={onEndReached}
