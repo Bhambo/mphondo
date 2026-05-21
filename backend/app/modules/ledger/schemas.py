@@ -15,7 +15,6 @@ class EntryIn(BaseModel):
     account_id: uuid.UUID
     direction: EntryDirection
     amount: Decimal = Field(..., gt=0, decimal_places=4)
-    notes: str | None = None
 
 
 class TransactionCreate(BaseModel):
@@ -49,7 +48,6 @@ class EntryOut(BaseModel):
     account_id: uuid.UUID
     direction: str
     amount: Decimal
-    notes: str | None
 
 
 class TransactionOut(BaseModel):

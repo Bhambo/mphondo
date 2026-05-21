@@ -50,15 +50,14 @@ async def create_transaction(db: AsyncSession, user_id: uuid.UUID, data: Transac
     for entry in data.entries:
         await db.execute(
             text("""
-                INSERT INTO entries (transaction_id, account_id, direction, amount, notes)
-                VALUES (:tx_id, :account_id, :direction, :amount, :notes)
+                INSERT INTO entries (transaction_id, account_id, direction, amount)
+                VALUES (:tx_id, :account_id, :direction, :amount)
             """),
             {
                 "tx_id": str(tx_id),
                 "account_id": str(entry.account_id),
                 "direction": entry.direction,
                 "amount": entry.amount,
-                "notes": entry.notes,
             },
         )
 
