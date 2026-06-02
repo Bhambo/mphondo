@@ -1,7 +1,8 @@
 [Unit]
 Description=Mphondo GitHub Webhook Listener
-After=network.target docker.service
+After=network.target docker.service mnt-data.mount
 Wants=docker.service
+RequiresMountsFor=/mnt/data
 
 [Service]
 Type=simple
